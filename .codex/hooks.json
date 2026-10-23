@@ -1,0 +1,31 @@
+{
+  "description": "Capture each user prompt and final assistant response for the 8x assignment.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/capture_exchange.py\"",
+            "commandWindows": "python \"C:\\Users\\HP\\Desktop\\8x_assessment\\.codex\\hooks\\capture_exchange.py\"",
+            "timeout": 10,
+            "statusMessage": "Capturing prompt"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/capture_exchange.py\"",
+            "commandWindows": "python \"C:\\Users\\HP\\Desktop\\8x_assessment\\.codex\\hooks\\capture_exchange.py\"",
+            "timeout": 10,
+            "statusMessage": "Capturing final response"
+          }
+        ]
+      }
+    ]
+  }
+}
