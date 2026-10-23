@@ -14,10 +14,18 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-LOG_DIR = PROJECT_ROOT / ".agent-logs"
+LOG_DIR = Path(
+    os.environ.get("AGENT_CAPTURE_LOG_DIR", PROJECT_ROOT / ".agent-logs")
+)
 TOOL_NAME = "codex-vscode"
 AUTHOR = "anaskhan-404"
 PROJECT_NAME = PROJECT_ROOT.name
+
+
+def hook_error(message: str) -> int:
+    """Report a hook failure without echoing prompt or response content."""
+    print(f"capture_exchange: {message}", file=sys.stderr)
+    return 1
 
 
 def utc_now() -> str:
@@ -40,6 +48,10 @@ def transcript_records(path_value: Any) -> list[dict[str, Any]]:
         return []
     path = Path(path_value)
     if not path.is_file():
+        print(
+            "capture_exchange: transcript unavailable; using event metadata",
+            file=sys.stderr,
+        )
         return []
 
     records: list[dict[str, Any]] = []
@@ -53,6 +65,10 @@ def transcript_records(path_value: Any) -> list[dict[str, Any]]:
                 if isinstance(item, dict):
                     records.append(item)
     except OSError:
+        print(
+            "capture_exchange: transcript unreadable; using event metadata",
+            file=sys.stderr,
+        )
         return []
     return records
 
@@ -81,7 +97,12 @@ def configured_model() -> str | None:
     return match.group(1) if match else None
 
 
-def event_model(records: list[dict[str, Any]], turn_id: Any) -> str:
+def event_model(
+    records: list[dict[str, Any]], turn_id: Any, hook_model: Any
+) -> str:
+    if isinstance(hook_model, str) and hook_model:
+        return hook_model
+
     latest: str | None = None
     for item in records:
         if item.get("type") != "turn_context":
@@ -151,62 +172,73 @@ def main() -> int:
     try:
         raw_input = sys.stdin.buffer.read()
         event = json.loads(raw_input.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError, TypeError):
-        return 0
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError) as exc:
+        return hook_error(f"invalid UTF-8 JSON payload ({type(exc).__name__})")
     if not isinstance(event, dict):
-        return 0
+        return hook_error("hook payload must be a JSON object")
 
     event_name = event.get("hook_event_name")
     if event_name not in {"UserPromptSubmit", "Stop"}:
-        return 0
+        return hook_error("unsupported or missing hook_event_name")
 
-    session_id = str(event.get("session_id") or "unknown-session")
+    session_id = event.get("session_id")
+    if not isinstance(session_id, str) or not session_id.strip():
+        return hook_error("missing session_id")
+
+    content_field = (
+        "prompt" if event_name == "UserPromptSubmit" else "last_assistant_message"
+    )
+    content = event.get(content_field)
+    if not isinstance(content, str):
+        return hook_error(f"missing or invalid {content_field}")
+
     timestamp = utc_now()
     records = transcript_records(event.get("transcript_path"))
     started = session_start(records, timestamp)
-    model = event_model(records, event.get("turn_id"))
+    model = event_model(records, event.get("turn_id"), event.get("model"))
 
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    matching = sorted(LOG_DIR.glob(f"*_{session_id}.md"))
-    if matching:
-        log_path = matching[0]
-        body = log_path.read_text(encoding="utf-8")
-    else:
-        filename = f"{started.strftime('%Y-%m-%d_%H-%M-%S')}_{session_id}.md"
-        log_path = LOG_DIR / filename
-        body = create_log(log_path, session_id, started, timestamp, model)
+    try:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        matching = sorted(LOG_DIR.glob(f"*_{session_id}.md"))
+        if matching:
+            log_path = matching[0]
+            body = log_path.read_text(encoding="utf-8")
+        else:
+            filename = f"{started.strftime('%Y-%m-%d_%H-%M-%S')}_{session_id}.md"
+            log_path = LOG_DIR / filename
+            body = create_log(log_path, session_id, started, timestamp, model)
 
-    prompt_count = len(re.findall(r"(?m)^\[LOG_ENTRY type=PROMPT ", body))
-    response_count = len(re.findall(r"(?m)^\[LOG_ENTRY type=RESPONSE ", body))
+        prompt_count = len(re.findall(r"(?m)^\[LOG_ENTRY type=PROMPT ", body))
+        response_count = len(re.findall(r"(?m)^\[LOG_ENTRY type=RESPONSE ", body))
 
-    if event_name == "UserPromptSubmit":
-        number = prompt_count + 1
-        content = event.get("prompt")
-        if not isinstance(content, str):
-            content = ""
-        entry_type = "PROMPT"
-        body = replace_yaml_value(body, "total_exchanges", str(number))
-        body = replace_yaml_value(body, "last_prompt_time", timestamp)
-        if prompt_count == 0:
-            body = replace_yaml_value(body, "first_prompt_time", timestamp)
-    else:
-        number = response_count + 1
-        content = event.get("last_assistant_message")
-        if not isinstance(content, str):
-            content = ""
-        entry_type = "RESPONSE"
+        if event_name == "UserPromptSubmit":
+            number = prompt_count + 1
+            entry_type = "PROMPT"
+            body = replace_yaml_value(body, "total_exchanges", str(number))
+            body = replace_yaml_value(body, "last_prompt_time", timestamp)
+            if prompt_count == 0:
+                body = replace_yaml_value(body, "first_prompt_time", timestamp)
+        else:
+            number = response_count + 1
+            entry_type = "RESPONSE"
 
-    entry = (
-        f"\n[LOG_ENTRY type={entry_type} num={number} session={session_id[:8]}]\n"
-        f"timestamp: {timestamp}\n"
-        f"model: {model}\n\n"
-        f"{content}\n"
-    )
-    body += entry
+        entry = (
+            f"\n[LOG_ENTRY type={entry_type} num={number} session={session_id[:8]}]\n"
+            f"timestamp: {timestamp}\n"
+            f"model: {model}\n\n"
+            f"{content}\n"
+        )
+        body += entry
 
-    temporary = log_path.with_suffix(log_path.suffix + ".tmp")
-    temporary.write_text(body, encoding="utf-8", newline="\n")
-    temporary.replace(log_path)
+        temporary = log_path.with_suffix(log_path.suffix + ".tmp")
+        temporary.write_text(body, encoding="utf-8", newline="\n")
+        temporary.replace(log_path)
+    except (OSError, UnicodeError) as exc:
+        return hook_error(f"failed to persist {event_name} ({type(exc).__name__})")
+
+    # Stop hooks require JSON on stdout. An empty object is also valid for
+    # UserPromptSubmit and does not add model-visible context.
+    print("{}")
     return 0
 
 
