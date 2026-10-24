@@ -15,7 +15,10 @@ export async function browser() {
   socket.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data)
     if (message.method === 'Fetch.requestPaused' && handleRequest) {
-      void handleRequest(message.params).catch((error) => errors.push(error.message))
+      void handleRequest(message.params).catch((error) => {
+        // Navigation can cancel an intercepted request before its delayed fixture resolves.
+        if (!error.message.includes('Invalid InterceptionId')) errors.push(error.message)
+      })
       return
     }
     if (message.method === 'Page.frameNavigated') currentUrl = message.params.frame.url
@@ -56,9 +59,11 @@ export async function browser() {
     await new Promise((resolve) => setTimeout(resolve, 300))
   }
   async function click(selector) {
-    const point = await evaluate(`(() => {
+    await until(`!!document.querySelector(${JSON.stringify(selector)}) && !document.querySelector(${JSON.stringify(selector)}).disabled`)
+    const point = await evaluate(`(async () => {
       const e = document.querySelector(${JSON.stringify(selector)}); if (!e) throw new Error('Missing ' + ${JSON.stringify(selector)});
       e.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
     })()`)
     await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', button: 'left', clickCount: 1, ...point })

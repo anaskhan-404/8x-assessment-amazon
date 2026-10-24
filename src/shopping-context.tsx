@@ -32,10 +32,10 @@ function useShoppingValue() {
   const mutation = useRef(false)
   const mergedUser = useRef<string | null>(null)
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (background = false) => {
     if (mutation.current) return
     const current = ++version.current
-    setLoading(true)
+    if (!background) setLoading(true)
     setLoadError('')
     setWishlistError('')
     try {
@@ -63,7 +63,7 @@ function useShoppingValue() {
   useEffect(() => {
     if (pathname === '/account' || pathname.startsWith('/account/')) return
     const timer = window.setTimeout(() => { void refresh() }, 0)
-    const onFocus = () => { void refresh() }
+    const onFocus = () => { void refresh(true) }
     window.addEventListener('focus', onFocus)
     return () => { window.clearTimeout(timer); invalidate(); window.removeEventListener('focus', onFocus) }
   }, [pathname, refresh, invalidate])
