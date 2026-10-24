@@ -1,108 +1,95 @@
 import { ArrowRight, BadgeCheck, Layers3, ScanSearch } from 'lucide-react'
-import Image from 'next/image'
+import { CatalogueImage as Image } from '../components/CatalogueImage'
 import Link from 'next/link'
-import { ProductCard } from '../components/ProductCard'
-import { categories, products } from '../data'
+import { ProductCollection } from '../components/ProductCollection'
+import { MarketplaceCollections } from '../components/MarketplaceCollections'
+import { categoryProducts, departments, products } from '../data'
 
 const featuredIds = [
   'sony-wh1000xm5',
-  'keychron-q1-max',
-  'lg-ultrafine-4k',
-  'logitech-mx-master',
+  'carbon-steel-wok',
+  'pride-and-prejudice',
+  'tennis-racket',
 ]
 
 export function HomePage() {
   const featured = featuredIds
     .map((id) => products.find((product) => product.id === id))
-    .filter((product) => Boolean(product))
+    .filter((product) => product !== undefined)
+  const deals = products
+    .filter((product) => product.previousPrice && product.previousPrice > product.price)
+    .sort((a, b) => (1 - b.price / b.previousPrice!) - (1 - a.price / a.previousPrice!))
+    .slice(0, 4)
 
   return (
     <>
-      <section className="home-hero">
-        <Image
-          src="/images/parallel-hero.png"
-          alt="Headphones, keyboard, monitor and mouse in a modern workspace"
-          fill
-          priority
-          sizes="100vw"
-        />
-        <div className="home-hero__veil" />
-        <div className="container home-hero__content">
-          <p className="eyebrow">Technology, considered</p>
-          <h1>Tech that earns its place.</h1>
+      <section className="container marketplace-hero">
+        <div className="marketplace-hero__image hero-showcase" aria-label="Finds for every part of your day">
+          {[
+            { image: '/images/products/carbon-steel-wok.webp', label: 'For your home', href: '/category/home-and-kitchen' },
+            { image: '/images/products/blue-handbag.webp', label: 'For your everyday', href: '/category/fashion' },
+            { image: '/images/products/tennis-racket.webp', label: 'For your downtime', href: '/category/sports-and-fitness' },
+          ].map((item) => <Link href={item.href} key={item.href} className="hero-showcase__item"><span><Image src={item.image} alt="" fill priority sizes="(max-width: 680px) 30vw, 200px" /></span><strong>{item.label}</strong></Link>)}
+        </div>
+        <div className="marketplace-hero__content">
+          <p className="eyebrow">A little of everything. A lot to discover.</p>
+          <h1>Good finds.<br />Clearer choices.</h1>
           <p>
-            Thoughtfully selected products, clearer specifications and side-by-side
-            comparisons when the details matter.
+            Thoughtful upgrades and everyday favourites for your home, your routine and whatever comes next.
           </p>
           <div className="hero-actions">
-            <Link className="button button--primary button--large" href="/category/headphones">
-              Shop headphones <ArrowRight size={19} />
-            </Link>
-            <a className="button button--glass button--large" href="#categories">
-              Browse categories
+            <a className="button button--primary button--large" href="#categories">
+              Shop categories <ArrowRight size={19} aria-hidden="true" />
             </a>
+            <Link className="text-link" href="/#deals">
+              See deals <ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
-          <div className="hero-proof">
-            <span><strong>4</strong> products side by side</span>
-            <span><strong>12</strong> useful headphone specs</span>
-            <span><strong>0</strong> marketplace clutter</span>
-          </div>
+          <p className="marketplace-hero__note">{departments.length} departments. Plenty of possibilities.</p>
         </div>
       </section>
 
-      <section className="section container" id="categories">
+      <div className="container discovery-strip"><span>One marketplace. Every part of your day.</span><Link href="/search?max=25">Finds under $25 <ArrowRight size={15} aria-hidden="true" /></Link><Link href="/search?sort=rating">Top-rated picks <ArrowRight size={15} aria-hidden="true" /></Link><Link href="/wishlist">Save your favourites <ArrowRight size={15} aria-hidden="true" /></Link></div>
+
+      <section className="section container category-discovery" id="categories">
         <div className="section-heading section-heading--split">
           <div>
             <p className="eyebrow">Shop by category</p>
-            <h2>Build a better setup</h2>
+            <h2>What are you looking for?</h2>
           </div>
-          <p>Essential technology for work, play and everything in between.</p>
+          <p>For your home, your routine and whatever comes next.</p>
         </div>
 
-        <div className="category-grid">
-          {categories.map((category, index) => (
+        <div className="category-grid department-grid">
+          {departments.map((category) => (
             <Link
-              className={`category-card ${index === 0 ? 'category-card--featured' : ''}`}
+              className="department-card"
               key={category.slug}
               href={`/category/${category.slug}`}
             >
-              <Image
+              <span className={`department-card__image department-card__image--${category.slug}`}><Image
                 src={category.image}
                 alt=""
                 fill
-                sizes={index === 0 ? '(max-width: 680px) 100vw, 50vw' : '(max-width: 900px) 50vw, 25vw'}
+                sizes="(max-width: 680px) 45vw, (max-width: 1100px) 30vw, 180px"
                 style={{ objectPosition: category.imagePosition }}
-              />
-              <span className="category-card__overlay" />
-              <span className="category-card__content">
-                <small>{category.eyebrow}</small>
+              /></span>
+              <span className="department-card__content">
                 <strong>{category.name}</strong>
-                <span>
-                  Explore <ArrowRight size={16} />
-                </span>
+                <span>{categoryProducts(category.slug).length} products <ArrowRight size={14} aria-hidden="true" /></span>
               </span>
-              {category.compareEnabled && <b>Compare enabled</b>}
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="section section--soft">
-        <div className="container">
-          <div className="section-heading section-heading--split">
-            <div>
-              <p className="eyebrow">The current shortlist</p>
-              <h2>Products worth a closer look</h2>
-            </div>
-            <Link className="text-link" href="/category/headphones">
-              See all headphones <ArrowRight size={16} />
-            </Link>
-          </div>
-          <div className="product-grid product-grid--four">
-            {featured.map((product) => product && <ProductCard key={product.id} product={product} />)}
-          </div>
-        </div>
-      </section>
+      <MarketplaceCollections />
+
+      <ProductCollection eyebrow="The current shortlist" title="Worth a closer look" products={featured} href="/search" linkLabel="Browse all products" />
+
+      <div className="section--soft">
+        <ProductCollection id="deals" eyebrow="Good finds, lower prices" title="Deals for your next upgrade" description="Savings against previous prices in our demonstration catalogue." products={deals} href="/category/electronics?sort=price-low" linkLabel="Explore electronics" />
+      </div>
 
       <section className="section container" id="about">
         <div className="principles-panel">

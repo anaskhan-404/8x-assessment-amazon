@@ -1,18 +1,21 @@
 import type { Metadata } from 'next'
-import { CompareTray } from '@/components/CompareTray'
-import { Footer } from '@/components/Footer'
-import { Header } from '@/components/Header'
-import { Toast } from '@/components/Toast'
+import { ApplicationShell } from '@/components/ApplicationShell'
 import { ComparisonProvider } from '@/comparison-context'
+import { ShoppingProvider } from '@/shopping-context'
 import '@/styles.css'
+import '@/styles/marketplace.css'
+import '@/styles/comparison.css'
+import '@/styles/commerce.css'
+import '@/styles/shopping.css'
+import '@/styles/storefront.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Parallel — Better tech, side by side',
+    default: 'Parallel — Good finds. Clearer choices.',
     template: '%s — Parallel',
   },
   description:
-    'A comparison-first technology store with clearer product information and better buying decisions.',
+    'Shop electronics, home, fashion, books, beauty and sports. Save products in one comparison tray and compare within each category.',
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -20,16 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <ComparisonProvider>
-          <div className="site-shell">
-            <a className="skip-link" href="#main-content">
-              Skip to content
-            </a>
-            <Header />
-            <main id="main-content">{children}</main>
-            <Footer />
-            <CompareTray />
-            <Toast />
-          </div>
+          <ShoppingProvider><ApplicationShell>{children}</ApplicationShell></ShoppingProvider>
         </ComparisonProvider>
       </body>
     </html>

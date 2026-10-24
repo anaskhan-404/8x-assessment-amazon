@@ -1,9 +1,10 @@
 import { ComparePage } from '@/views/ComparePage'
+import { Suspense } from 'react'
 
 export const metadata = {
-  title: 'Compare headphones',
+  title: 'Comparison workspace',
 }
 
 export default function Page() {
-  return <ComparePage />
+  return <Suspense fallback={<section className="section container" aria-busy="true">Loading your comparison workspace…</section>}><ComparePage /></Suspense>
 }

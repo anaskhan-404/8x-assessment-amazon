@@ -1,13 +1,17 @@
 'use client'
 
-import { Check, CheckCircle2, ChevronRight, PackageCheck, Scale, ShieldCheck, Truck } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Heart, PackageCheck, Scale, ShoppingCart, Truck } from 'lucide-react'
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
-import { notFound, useParams } from 'next/navigation'
+import { notFound, useParams, useRouter } from 'next/navigation'
 import { Rating } from '../components/Rating'
 import { useComparison } from '../comparison-context'
-import { categoryBySlug, headphoneSpecs, productBySlug } from '../data'
+import { canCompareProduct, categoryBySlug, categoryProducts, productBySlug } from '../data'
+import { productSpecifications } from '../product-specifications'
+import { ProductCollection } from '@/components/ProductCollection'
+import { ProductGallery } from '@/components/shopping/ProductGallery'
+import { QuantityControl } from '@/components/shopping/QuantityControl'
+import { useShopping } from '@/shopping-context'
 
 const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -19,38 +23,33 @@ export function ProductPage() {
   const params = useParams<{ productSlug: string }>()
   const productSlug = params?.productSlug
   const product = productBySlug(productSlug)
-  const [addedToBag, setAddedToBag] = useState(false)
-  const { isSelected, isAtLimit, toggle } = useComparison()
+  const [quantity, setQuantity] = useState(1)
+  const { addToCart, wishlist, toggleWishlist, busy } = useShopping()
+  const router = useRouter()
+  const { isSelected, limitReason, toggle } = useComparison()
 
   if (!product) notFound()
 
   const category = categoryBySlug(product.category)
-  const compareEnabled = product.category === 'headphones'
+  const compareEnabled = canCompareProduct(product)
+  const specifications = productSpecifications(product)
   const selected = isSelected(product.id)
-  const compareDisabled = compareEnabled && isAtLimit && !selected
+  const reason = !selected ? limitReason(product.id) : null
+  const compareDisabled = Boolean(reason)
 
   return (
-    <section className="product-page container">
+    <><section className="product-page container">
       <nav className="product-breadcrumb" aria-label="Breadcrumb">
         <Link href="/">Home</Link>
         <ChevronRight size={14} />
+        {category?.parentSlug && <><Link href={`/category/${category.parentSlug}`}>Electronics</Link><ChevronRight size={14} /></>}
         <Link href={`/category/${product.category}`}>{category?.name}</Link>
         <ChevronRight size={14} />
         <span>{product.name}</span>
       </nav>
 
       <div className="product-detail">
-        <div className="product-detail__gallery">
-          {product.badge && <span className="product-badge">{product.badge}</span>}
-          <Image
-            src={product.image}
-            alt={`${product.brand} ${product.name}`}
-            fill
-            priority
-            sizes="(max-width: 680px) 100vw, 45vw"
-          />
-          <span>Selected product photography</span>
-        </div>
+        <ProductGallery product={product} />
 
         <div className="product-detail__info">
           <p className="eyebrow">{product.brand}</p>
@@ -67,16 +66,16 @@ export function ProductPage() {
             ))}
           </dl>
 
-          {compareEnabled && product.specs && (
+          {specifications.length > 0 && (
             <div className="detail-specs">
               <div className="detail-specs__heading">
                 <h2>Useful details</h2>
-                <span>Normalized for comparison</span>
+                <span>{compareEnabled ? 'Normalized for comparison' : 'Product specifications'}</span>
               </div>
-              {headphoneSpecs.slice(0, 6).map((definition) => (
+              {specifications.map((definition) => (
                 <div key={definition.key}>
                   <span>{definition.label}</span>
-                  <strong>{product.specs?.[definition.key]?.display ?? 'Not provided'}</strong>
+                  <strong>{definition.value?.display ?? 'Not provided'}</strong>
                 </div>
               ))}
             </div>
@@ -88,22 +87,18 @@ export function ProductPage() {
             <span>{money.format(product.price)}</span>
             {product.previousPrice && <del>{money.format(product.previousPrice)}</del>}
           </div>
-          <p className="payment-note">or 4 interest-free payments at checkout</p>
+          <p className="payment-note">USD · illustrative catalogue price</p>
           <div className="delivery-note">
             <Truck size={20} />
             <div>
-              <strong>Free delivery</strong>
-              <span>Arrives in 2–4 business days</span>
+              <strong>Delivery options</strong>
+              <span>Rates and dates confirmed at checkout</span>
             </div>
           </div>
-          <button
-            className={`button button--primary button--full ${addedToBag ? 'is-complete' : ''}`}
-            type="button"
-            onClick={() => setAddedToBag(true)}
-          >
-            {addedToBag ? <Check size={18} /> : null}
-            {addedToBag ? 'Added to bag' : 'Add to bag'}
-          </button>
+          <p className="product-availability"><PackageCheck size={16} aria-hidden="true" />Listed in our demo catalogue</p>
+          <div className="purchase-quantity"><span>Quantity</span><QuantityControl name={product.name} quantity={quantity} onChange={setQuantity} /></div>
+          <button className="button shop-primary button--full" type="button" disabled={busy} onClick={() => { void addToCart(product.id, quantity) }}><ShoppingCart size={18} aria-hidden="true" />{busy ? 'Please wait…' : 'Add to cart'}</button>
+          <button className="button shop-buy button--full" type="button" disabled={busy} onClick={async () => { if (await addToCart(product.id, quantity)) router.push('/checkout') }}>Buy now</button>
           {compareEnabled && (
             <button
               className={`button button--outline button--full ${selected ? 'is-selected' : ''}`}
@@ -111,18 +106,17 @@ export function ProductPage() {
               onClick={() => toggle(product.id)}
               disabled={compareDisabled}
               aria-pressed={selected}
+              title={reason ?? undefined}
             >
               {selected ? <CheckCircle2 size={18} /> : <Scale size={18} />}
               {selected ? 'Added to compare' : 'Add to compare'}
             </button>
           )}
-          <div className="purchase-assurances">
-            <span><PackageCheck size={17} /> 30-day returns</span>
-            <span><ShieldCheck size={17} /> 2-year warranty</span>
-          </div>
-          <small>Prices and availability are shown for this product prototype.</small>
+          {compareEnabled && reason && <p className="comparison-limit-note">{reason}</p>}
+          <button className="button button--outline button--full" type="button" disabled={busy} onClick={() => { void toggleWishlist(product.id) }} aria-pressed={wishlist.includes(product.id)}><Heart size={17} fill={wishlist.includes(product.id) ? 'currentColor' : 'none'} aria-hidden="true" />{wishlist.includes(product.id) ? 'Saved to wishlist' : 'Save to wishlist'}</button>
+          <small>Assessment store. Stock and prices are verified before checkout. Payments use Stripe test mode.</small>
         </aside>
       </div>
-    </section>
+    </section><ProductCollection eyebrow="More to discover" title={`More in ${category?.name.toLowerCase() ?? 'this category'}`} products={categoryProducts(product.category).filter((item) => item.id !== product.id).slice(0, 4)} href={`/category/${product.category}`} linkLabel="Browse category" /></>
   )
 }

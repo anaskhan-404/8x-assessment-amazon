@@ -1,0 +1,10 @@
+.commerce-page { padding-block: 3rem; min-height: 50vh; }
+.commerce-page h1 { margin-bottom: 1rem; }
+.commerce-page p { margin-block: 1rem; }
+.commerce-page a { text-decoration: underline; text-underline-offset: 3px; }
+.commerce-list { list-style: none; padding: 0; margin-block: 1.5rem; }
+.commerce-list > li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.25rem; border-bottom: 1px solid var(--border, #e3e5e8); }
+.commerce-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.commerce-actions label { display: flex; flex-direction: column; font-size: .75rem; gap: .25rem; max-width: 14rem; }
+.commerce-actions select { border: 1px solid var(--border, #e3e5e8); padding: .5rem; border-radius: .25rem; }
+.commerce-page [role="alert"] { border-left: 3px solid currentColor; padding-left: 1rem; }

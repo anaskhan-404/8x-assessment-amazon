@@ -1,11 +1,13 @@
 'use client'
 
-import { Check, Plus, Scale, ShoppingBag } from 'lucide-react'
-import Image from 'next/image'
+import { Check, Heart, Scale, ShoppingCart } from 'lucide-react'
+import { CatalogueImage as Image } from './CatalogueImage'
 import Link from 'next/link'
 import { useComparison } from '../comparison-context'
 import type { Product } from '../types'
 import { Rating } from './Rating'
+import { canCompareProduct } from '../data'
+import { useShopping } from '../shopping-context'
 
 const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -13,21 +15,28 @@ const money = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
-export function ProductCard({ product }: { product: Product }) {
-  const { isSelected, isAtLimit, toggle } = useComparison()
+export function ProductCard({ product, unavailable = false }: { product: Product; unavailable?: boolean }) {
+  const { addToCart, wishlist, toggleWishlist, busy } = useShopping()
+  const saved = wishlist.includes(product.id)
+  const { isSelected, limitReason, toggle } = useComparison()
   const selected = isSelected(product.id)
-  const canCompare = product.category === 'headphones'
-  const compareDisabled = canCompare && isAtLimit && !selected
+  const canCompare = canCompareProduct(product)
+  const reason = !selected ? limitReason(product.id) : null
+  const compareDisabled = Boolean(reason)
+  const savings = product.previousPrice && product.previousPrice > product.price
+    ? Math.round((1 - product.price / product.previousPrice) * 100)
+    : 0
 
   return (
-    <article className={`product-card ${selected ? 'product-card--selected' : ''}`}>
+    <article className={`product-card ${selected ? 'product-card--selected' : ''} ${product.image.endsWith('.webp') || product.category === 'books' ? 'product-card--contained' : ''}`}>
+      <button className={`product-save ${saved ? 'is-saved' : ''}`} type="button" disabled={busy} aria-label={`${saved ? 'Remove from wishlist:' : 'Save to wishlist:'} ${product.name}`} aria-pressed={saved} onClick={() => { void toggleWishlist(product.id) }}><Heart size={19} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" /></button>
       <Link className="product-card__image" href={`/product/${product.slug}`}>
         {product.badge && <span className="product-badge">{product.badge}</span>}
         <Image
           src={product.image}
           alt={`${product.brand} ${product.name}`}
           fill
-          sizes="(max-width: 680px) 100vw, (max-width: 900px) 50vw, 33vw"
+          sizes="(max-width: 540px) 50vw, (max-width: 1100px) 33vw, 25vw"
           style={{ objectPosition: product.imagePosition }}
         />
       </Link>
@@ -58,14 +67,12 @@ export function ProductCard({ product }: { product: Product }) {
               <del>{money.format(product.previousPrice)}</del>
             )}
           </div>
-          <span className="stock-status">In stock</span>
+          <span className="stock-status">Demo price</span>
         </div>
+        {savings > 0 && <p className="product-saving">Save {savings}% <span>on the previous price</span></p>}
 
         <div className="product-card__actions">
-          <Link className="button button--dark button--small" href={`/product/${product.slug}`}>
-            <ShoppingBag size={17} />
-            View product
-          </Link>
+          <button className="button shop-primary button--small" type="button" disabled={busy || unavailable} onClick={() => { void addToCart(product.id) }} aria-label={`Add to cart: ${product.name}`}><ShoppingCart size={17} aria-hidden="true" />{unavailable ? 'Unavailable' : 'Add to cart'}</button>
           {canCompare ? (
             <button
               type="button"
@@ -73,17 +80,15 @@ export function ProductCard({ product }: { product: Product }) {
               onClick={() => toggle(product.id)}
               disabled={compareDisabled}
               aria-pressed={selected}
-              title={compareDisabled ? 'Remove a product before adding another' : undefined}
+              title={reason ?? undefined}
+              aria-label={`${selected ? 'Remove from comparison:' : 'Add to compare:'} ${product.brand} ${product.name}`}
             >
               {selected ? <Check size={17} /> : <Scale size={17} />}
-              {selected ? 'Added' : 'Compare'}
+              {selected ? 'Added to compare' : 'Add to compare'}
             </button>
-          ) : (
-            <button type="button" className="icon-action" aria-label={`Add ${product.name} to bag`}>
-              <Plus size={18} />
-            </button>
-          )}
+          ) : null}
         </div>
+        {canCompare && reason && <p className="comparison-limit-note">{reason}</p>}
       </div>
     </article>
   )

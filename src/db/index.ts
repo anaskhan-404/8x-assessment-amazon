@@ -1,11 +1,17 @@
 import 'server-only'
-import { neon } from '@neondatabase/serverless'
-import { drizzle } from 'drizzle-orm/neon-http'
+import { Pool, neonConfig } from '@neondatabase/serverless'
+import { drizzle } from 'drizzle-orm/neon-serverless'
+import ws from 'ws'
 import * as schema from './schema'
+import { requiredEnv } from '../server/errors'
 
-export function getDatabase() {
-  const connectionString = process.env.DATABASE_URL
-  if (!connectionString) return null
+neonConfig.webSocketConstructor = ws
+let database: ReturnType<typeof connect> | undefined
 
-  return drizzle(neon(connectionString), { schema })
+function connect() {
+  return drizzle(new Pool({ connectionString: requiredEnv('DATABASE_URL'), max: 5 }), { schema })
 }
+
+// Lazy initialization: static builds never need database credentials.
+export function getDatabase() { return database ??= connect() }
+export type Database = ReturnType<typeof getDatabase>

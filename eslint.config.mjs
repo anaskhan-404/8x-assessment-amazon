@@ -4,7 +4,7 @@ import nextTypeScript from 'eslint-config-next/typescript'
 const eslintConfig = [
   ...nextVitals,
   ...nextTypeScript,
-  { ignores: ['.next/**', 'out/**', 'build/**', 'next-env.d.ts'] },
+  { ignores: ['.next/**', '.tmp/**', 'out/**', 'build/**', 'next-env.d.ts'] },
 ]
 
 export default eslintConfig

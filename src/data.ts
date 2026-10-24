@@ -1,19 +1,30 @@
 import type {
   Category,
-  HeadphoneSpecKey,
   Product,
-  SpecDefinition,
+  ProductSpecKey,
   SpecValue,
 } from './types'
+import { marketplaceProducts } from './marketplace-data'
+import { comparisonSchemas } from './comparison-schemas'
 
 const image = (filename: string) => `/images/products/${filename}`
 
 const spec = (
   display: string,
   comparable: string | number | boolean,
-): SpecValue => ({ display, comparable })
+  unit?: SpecValue['unit'],
+): SpecValue => ({ display, comparable, ...(unit ? { unit } : {}) })
 
-export const categories: Category[] = [
+export const departments: Category[] = [
+  { slug: 'electronics', name: 'Electronics', eyebrow: 'A better everyday setup', description: 'Headphones, keyboards, monitors and useful tech. Find your next upgrade with the details that matter.', image: '/images/parallel-hero.png' },
+  { slug: 'home-and-kitchen', name: 'Home and kitchen', eyebrow: 'Make yourself at home', description: 'Practical pieces for cooking, creating and making more of everyday life at home.', image: image('carbon-steel-wok.webp') },
+  { slug: 'fashion', name: 'Fashion', eyebrow: 'Everyday, your way', description: 'Easy layers and useful bags for workdays, weekends and everything in between.', image: image('blue-check-shirt.webp') },
+  { slug: 'books', name: 'Books', eyebrow: 'Find your next chapter', description: 'Rediscover enduring stories, curious worlds and characters that stay with you.', image: image('pride-and-prejudice.jpg') },
+  { slug: 'beauty-and-personal-care', name: 'Beauty and personal care', eyebrow: 'Your daily essentials', description: 'Everyday makeup and personal-care essentials, with clear details to help you choose.', image: image('eyeshadow-palette.webp') },
+  { slug: 'sports-and-fitness', name: 'Sports and fitness', eyebrow: 'Make time to move', description: 'Court, field and weekend favourites for practice, play and getting outdoors.', image: image('basketball.webp') },
+]
+
+export const electronicsCategories: Category[] = [
   {
     slug: 'headphones',
     name: 'Headphones',
@@ -51,7 +62,9 @@ export const categories: Category[] = [
     description: 'Useful additions that make your everyday technology work better.',
     image: image('anker-prime-dock.jpg'),
   },
-]
+].map((category) => ({ ...category, parentSlug: 'electronics', compareEnabled: true })) as Category[]
+
+export const categories: Category[] = [...departments, ...electronicsCategories].map((category) => ({ ...category, compareEnabled: category.slug !== 'electronics' }))
 
 export const products: Product[] = [
   {
@@ -76,9 +89,9 @@ export const products: Product[] = [
     specs: {
       formFactor: spec('Over-ear', 'over-ear'),
       noiseCancellation: spec('Adaptive ANC', 'adaptive'),
-      battery: spec('30 hours', 30),
-      fastCharge: spec('3 min gives 3 hours', 180),
-      weight: spec('250 g', 250),
+      battery: spec('30 hours', 30, 'h'),
+      fastCharge: spec('3 min gives 3 hours', 180, 'min'),
+      weight: spec('250 g', 250, 'g'),
       multipoint: spec('Yes — 2 devices', true),
       bluetooth: spec('Bluetooth 5.2', 5.2),
       codecs: spec('SBC, AAC, LDAC', 'sbc-aac-ldac'),
@@ -109,9 +122,9 @@ export const products: Product[] = [
     specs: {
       formFactor: spec('Over-ear', 'over-ear'),
       noiseCancellation: spec('Adaptive ANC', 'adaptive'),
-      battery: spec('24 hours', 24),
-      fastCharge: spec('15 min gives 2.5 hours', 150),
-      weight: spec('253 g', 253),
+      battery: spec('24 hours', 24, 'h'),
+      fastCharge: spec('15 min gives 2.5 hours', 150, 'min'),
+      weight: spec('253 g', 253, 'g'),
       multipoint: spec('Yes — 2 devices', true),
       bluetooth: spec('Bluetooth 5.3', 5.3),
       codecs: spec('SBC, AAC', 'sbc-aac'),
@@ -143,9 +156,9 @@ export const products: Product[] = [
     specs: {
       formFactor: spec('Over-ear', 'over-ear'),
       noiseCancellation: spec('Adaptive ANC', 'adaptive'),
-      battery: spec('60 hours', 60),
-      fastCharge: spec('10 min gives 6 hours', 360),
-      weight: spec('293 g', 293),
+      battery: spec('60 hours', 60, 'h'),
+      fastCharge: spec('10 min gives 6 hours', 360, 'min'),
+      weight: spec('293 g', 293, 'g'),
       multipoint: spec('Yes — 2 devices', true),
       bluetooth: spec('Bluetooth 5.2', 5.2),
       codecs: spec('SBC, AAC, aptX Adaptive', 'sbc-aac-aptx'),
@@ -176,9 +189,9 @@ export const products: Product[] = [
     specs: {
       formFactor: spec('Over-ear', 'over-ear'),
       noiseCancellation: spec('Active ANC', 'active'),
-      battery: spec('20 hours', 20),
-      fastCharge: spec('5 min gives 1.5 hours', 90),
-      weight: spec('386 g', 386),
+      battery: spec('20 hours', 20, 'h'),
+      fastCharge: spec('5 min gives 1.5 hours', 90, 'min'),
+      weight: spec('386 g', 386, 'g'),
       multipoint: spec('Apple auto switching', 'ecosystem'),
       bluetooth: spec('Bluetooth 5.0', 5),
       codecs: spec('SBC, AAC', 'sbc-aac'),
@@ -210,9 +223,9 @@ export const products: Product[] = [
     specs: {
       formFactor: spec('Over-ear', 'over-ear'),
       noiseCancellation: spec('Adaptive ANC', 'adaptive'),
-      battery: spec('40 hours; 24 with ANC', 40),
-      fastCharge: spec('10 min gives 4 hours', 240),
-      weight: spec('260 g', 260),
+      battery: spec('40 hours; 24 with ANC', 40, 'h'),
+      fastCharge: spec('10 min gives 4 hours', 240, 'min'),
+      weight: spec('260 g', 260, 'g'),
       multipoint: spec('Android only', 'android'),
       bluetooth: spec('Class 1 Bluetooth', 'class-1'),
       codecs: spec('SBC, AAC', 'sbc-aac'),
@@ -243,9 +256,9 @@ export const products: Product[] = [
     specs: {
       formFactor: spec('Over-ear', 'over-ear'),
       noiseCancellation: spec('True Adaptive ANC', 'adaptive'),
-      battery: spec('50 hours; 30 with ANC', 50),
-      fastCharge: spec('10 min gives 5 hours', 300),
-      weight: spec('278 g', 278),
+      battery: spec('50 hours; 30 with ANC', 50, 'h'),
+      fastCharge: spec('10 min gives 5 hours', 300, 'min'),
+      weight: spec('278 g', 278, 'g'),
       multipoint: spec('Yes — 2 devices', true),
       bluetooth: spec('Bluetooth 5.3', 5.3),
       codecs: spec('SBC, AAC', 'sbc-aac'),
@@ -266,6 +279,7 @@ export const products: Product[] = [
     rating: 4.8,
     reviewCount: 1860,
     image: image('keychron-q1-max.jpg'),
+    specs: { layout: spec('75%', '75'), switches: spec('Hot-swappable mechanical', 'hot-swap'), connection: spec('2.4 GHz, Bluetooth, USB-C', 'tri-mode'), profile: spec('Standard', 'standard') },
     highlights: [
       { label: 'Layout', value: '75%' },
       { label: 'Switches', value: 'Hot-swappable' },
@@ -283,6 +297,7 @@ export const products: Product[] = [
     rating: 4.6,
     reviewCount: 940,
     image: image('nuphy-air75.jpg'),
+    specs: { layout: spec('75%', '75'), switches: spec('Low-profile mechanical', 'low-profile'), connection: spec('2.4 GHz, Bluetooth, USB-C', 'tri-mode'), profile: spec('Low-profile', 'low-profile') },
     highlights: [
       { label: 'Layout', value: '75%' },
       { label: 'Profile', value: 'Low-profile' },
@@ -300,6 +315,7 @@ export const products: Product[] = [
     rating: 4.6,
     reviewCount: 5260,
     image: image('lg-ultrafine-4k.jpg'),
+    specs: { screenSize: spec('27 inches', 27, 'in'), resolution: spec('3840 × 2160', '4k'), panel: spec('IPS', 'ips'), connection: spec('USB-C, HDMI, DisplayPort', 'usb-c-hdmi-dp') },
     highlights: [
       { label: 'Size', value: '27 inches' },
       { label: 'Resolution', value: '4K UHD' },
@@ -317,6 +333,7 @@ export const products: Product[] = [
     rating: 4.7,
     reviewCount: 3180,
     image: image('dell-ultrasharp.jpg'),
+    specs: { screenSize: spec('27 inches', 27, 'in'), resolution: spec('3840 × 2160', '4k'), panel: spec('IPS Black', 'ips-black'), connection: spec('USB-C hub, HDMI, DisplayPort', 'usb-c-hdmi-dp') },
     highlights: [
       { label: 'Size', value: '27 inches' },
       { label: 'Panel', value: 'IPS Black' },
@@ -334,6 +351,7 @@ export const products: Product[] = [
     rating: 4.8,
     reviewCount: 28940,
     image: image('logitech-mx-master.jpg'),
+    specs: { sensor: spec('8,000 DPI', 8000, 'DPI'), weight: spec('141 g', 141, 'g'), connection: spec('Bluetooth, Logi Bolt', 'bluetooth-bolt'), battery: spec('Up to 70 days', 70, 'days') },
     highlights: [
       { label: 'Sensor', value: '8K DPI' },
       { label: 'Battery', value: '70 days' },
@@ -351,6 +369,7 @@ export const products: Product[] = [
     rating: 4.7,
     reviewCount: 2140,
     image: image('razer-viper-v3.jpg'),
+    specs: { sensor: spec('35,000 DPI', 35000, 'DPI'), weight: spec('54 g', 54, 'g'), connection: spec('2.4 GHz wireless, USB-C', 'wireless-usb'), battery: null },
     highlights: [
       { label: 'Weight', value: '54 g' },
       { label: 'Sensor', value: '35K DPI' },
@@ -368,6 +387,7 @@ export const products: Product[] = [
     rating: 4.6,
     reviewCount: 4880,
     image: image('anker-prime-dock.jpg'),
+    specs: { ports: spec('12', 12, 'ports'), bandwidth: null, power: spec('100 W PD', 100, 'W'), connection: spec('USB-C', 'usb-c') },
     highlights: [
       { label: 'Ports', value: '12-in-1' },
       { label: 'Displays', value: 'Dual 4K' },
@@ -385,84 +405,17 @@ export const products: Product[] = [
     rating: 4.7,
     reviewCount: 2670,
     image: image('caldigit-ts4.jpg'),
+    specs: { ports: spec('18', 18, 'ports'), bandwidth: spec('40 Gbps', 40, 'Gbps'), power: spec('98 W', 98, 'W'), connection: spec('Thunderbolt 4', 'thunderbolt-4') },
     highlights: [
       { label: 'Ports', value: '18' },
       { label: 'Speed', value: '40 Gbps' },
       { label: 'Power', value: '98W' },
     ],
   },
+  ...marketplaceProducts,
 ]
 
-export const headphoneSpecs: SpecDefinition[] = [
-  {
-    key: 'formFactor',
-    label: 'Form factor',
-    group: 'Essentials',
-  },
-  {
-    key: 'noiseCancellation',
-    label: 'Noise cancellation',
-    group: 'Essentials',
-    keyDifference: true,
-  },
-  {
-    key: 'battery',
-    label: 'Battery life',
-    group: 'Essentials',
-    keyDifference: true,
-    higherIsBetter: true,
-  },
-  {
-    key: 'weight',
-    label: 'Weight',
-    group: 'Essentials',
-    keyDifference: true,
-    lowerIsBetter: true,
-  },
-  {
-    key: 'codecs',
-    label: 'Audio codecs',
-    group: 'Sound & calls',
-    keyDifference: true,
-  },
-  {
-    key: 'microphones',
-    label: 'Call microphones',
-    group: 'Sound & calls',
-  },
-  {
-    key: 'waterResistance',
-    label: 'Water resistance',
-    group: 'Comfort & durability',
-  },
-  {
-    key: 'folding',
-    label: 'Travel design',
-    group: 'Comfort & durability',
-  },
-  {
-    key: 'multipoint',
-    label: 'Multi-device',
-    group: 'Connectivity & charging',
-    keyDifference: true,
-  },
-  {
-    key: 'bluetooth',
-    label: 'Bluetooth',
-    group: 'Connectivity & charging',
-  },
-  {
-    key: 'fastCharge',
-    label: 'Fast charge',
-    group: 'Connectivity & charging',
-    higherIsBetter: true,
-  },
-  {
-    key: 'charging',
-    label: 'Charging port',
-    group: 'Connectivity & charging',
-  },
-]
+export { headphoneSpecs } from './comparison-schemas'
 
 export const categoryBySlug = (slug?: string) =>
   categories.find((category) => category.slug === slug)
@@ -474,7 +427,11 @@ export const productById = (id: string) =>
   products.find((product) => product.id === id)
 
 export const categoryProducts = (category: string) =>
-  products.filter((product) => product.category === category)
+  products.filter((product) => product.category === category || categoryBySlug(product.category)?.parentSlug === category)
 
-export const getSpec = (product: Product, key: HeadphoneSpecKey) =>
-  product.specs?.[key] ?? null
+export const getSpec = (product: Product, key: ProductSpecKey) =>
+  (product.specs as Partial<Record<ProductSpecKey, SpecValue | null>>)[key] ?? null
+
+export const canCompareProduct = (product?: Product): boolean =>
+  Boolean(product && comparisonSchemas[product.category])
+

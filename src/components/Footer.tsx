@@ -1,10 +1,11 @@
 import { ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
-import { categories } from '../data'
+import { departments } from '../data'
 
 export function Footer() {
   return (
     <footer className="site-footer">
+      <a href="#main-content" className="footer-back-top">Back to top</a>
       <div className="container footer-grid">
         <div className="footer-intro">
           <Link className="brand brand--footer" href="/">
@@ -14,12 +15,12 @@ export function Footer() {
             </span>
             <span>Parallel</span>
           </Link>
-          <p>Better tech, side by side. Useful context without the marketplace noise.</p>
+          <p>Good finds. Clearer choices. Everyday essentials with useful context, without the marketplace noise.</p>
         </div>
         <div>
           <h2>Shop</h2>
           <div className="footer-links">
-            {categories.map((category) => (
+            {departments.map((category) => (
               <Link key={category.slug} href={`/category/${category.slug}`}>
                 {category.name}
               </Link>
@@ -32,14 +33,17 @@ export function Footer() {
             <Link href="/compare">
               Compare products <ArrowUpRight size={14} />
             </Link>
-            <a href="#about">How we choose</a>
-            <a href="mailto:hello@parallel.example">Contact</a>
+            <Link href="/#about">How we choose</Link>
+            <Link href="/account/help">Help & demo information</Link>
+            <Link href="/account/privacy">Privacy notice</Link>
+            <Link href="/account/terms">Terms of use</Link>
           </div>
         </div>
+        <div><h2>Your shopping</h2><div className="footer-links"><Link href="/account">Your account</Link><Link href="/orders">Your orders</Link><Link href="/cart">Shopping cart</Link><Link href="/wishlist">Your wishlist</Link></div></div>
       </div>
       <div className="container footer-bottom">
         <span>© 2026 Parallel</span>
-        <span>Prototype catalogue — prices shown for demonstration.</span>
+        <span>Demo catalogue · sample prices, ratings and specifications · illustrative images.</span>
       </div>
     </footer>
   )
