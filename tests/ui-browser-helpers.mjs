@@ -47,7 +47,8 @@ export async function browser() {
       if (await evaluate(expression)) return
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
-    throw new Error(`Condition not met: ${expression}`)
+    const state = await evaluate("({path:location.pathname, cart:document.querySelector('.cart-count')?.textContent, notice:document.querySelector('.shopping-notice')?.textContent, quantity:document.querySelector('.quantity-control output')?.textContent, focus:document.activeElement?.outerHTML?.slice(0,200)})")
+    throw new Error(`Condition not met: ${expression}; ${JSON.stringify(state)}`)
   }
   async function visit(path) {
     await cdp('Page.navigate', { url: origin + path })
