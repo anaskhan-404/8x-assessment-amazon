@@ -10,9 +10,10 @@ import { ShoppingStatus } from '@/components/shopping/ShoppingStatus'
 import { useShopping } from '@/shopping-context'
 import { formatMoney } from '@/commerce'
 
-export function CartPage() {
+export function CartPage({ cancelled = false }: { cancelled?: boolean }) {
   const { lines, count, setQuantity, removeFromCart, saveForLater, busy, loading, loadError, refresh } = useShopping()
   return <section className="container shopping-page"><div className="shopping-heading"><div><p className="eyebrow">Your good finds</p><h1>Shopping cart <span>({count})</span></h1></div><Link className="text-link" href="/wishlist"><Heart size={17} aria-hidden="true" />Your wishlist</Link></div>
+    {cancelled && <p className="preview-banner" role="status">Checkout was cancelled. Your cart is saved and no payment has been confirmed.</p>}
     {loading || loadError ? <ShoppingStatus loading={loading} error={loadError} retry={refresh} /> : lines.length ? <div className="shopping-layout"><div className="cart-items" aria-busy={busy}><p className="cart-items__note">Your cart is saved. Adding an item does not reserve stock.</p>{lines.map((item) => <article className="cart-item" key={item.productId}>
       <Link className="cart-item__image" href={'/product/' + item.slug}><CatalogueImage src={item.image} alt={item.name} fill sizes="(max-width: 540px) 96px, 150px" /></Link>
       <div className="cart-item__body"><p className="eyebrow">{item.product?.brand ?? 'Parallel'}</p><Link className="cart-item__title" href={'/product/' + item.slug}>{item.name}</Link><p className="cart-item__spec">{item.product?.highlights.slice(0, 2).map((detail) => detail.label + ': ' + detail.value).join(' · ')}</p><p>{formatMoney(item.unitPriceCents / 100)} each{!item.available && <strong className="checkout-error"> · Currently unavailable</strong>}</p>

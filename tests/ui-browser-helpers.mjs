@@ -10,9 +10,14 @@ export async function browser() {
   let sequence = 0
   const pending = new Map()
   const errors = []
+  let handleRequest
   let currentUrl = ''
   socket.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data)
+    if (message.method === 'Fetch.requestPaused' && handleRequest) {
+      void handleRequest(message.params).catch((error) => errors.push(error.message))
+      return
+    }
     if (message.method === 'Page.frameNavigated') currentUrl = message.params.frame.url
     if (message.method === 'Page.navigatedWithinDocument') currentUrl = message.params.url
     if (message.method === 'Runtime.exceptionThrown') errors.push(`${currentUrl}: ${message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text}`)
@@ -83,5 +88,12 @@ export async function browser() {
   await cdp('Page.enable')
   await cdp('Runtime.enable')
   await cdp('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
-  return { cdp, evaluate, until, visit, click, fill, select, viewport, screenshot, layout, errors, close: () => socket.close() }
+  async function mockApi(handler) {
+    handleRequest = async ({ requestId, request }) => {
+      const response = await handler(new URL(request.url).pathname, request.method, request.postData ? JSON.parse(request.postData) : undefined)
+      await cdp('Fetch.fulfillRequest', { requestId, responseCode: response.status ?? 200, responseHeaders: [{name:'Content-Type', value:'application/json'}], body: Buffer.from(JSON.stringify(response.body)).toString('base64') })
+    }
+    await cdp('Fetch.enable', { patterns: [{urlPattern: origin + '/api/*'}] })
+  }
+  return { cdp, evaluate, until, visit, click, fill, select, viewport, screenshot, layout, mockApi, errors, close: () => socket.close() }
 }
